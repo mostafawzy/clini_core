@@ -5,7 +5,7 @@ Entry point: streamlit run frontend/streamlit_app.py
 
 import streamlit as st
 
-# ── Must be first Streamlit call ──────────────────────────────────────────────
+
 st.set_page_config(
     page_title="ClinCore",
     page_icon="",
