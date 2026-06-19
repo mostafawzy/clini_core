@@ -319,7 +319,6 @@ footer {
 PAGES = {
     " Home":         "home",
     " Document Q&A": "rag",
-    "  Medical NER":  "ner",
     "  Skin Vision":  "vision",
 }
 
@@ -371,8 +370,6 @@ def main():
         from pages.home import render
     elif page == "rag":
         from pages.rag import render
-    elif page == "ner":
-        from pages.ner import render
     elif page == "vision":
         from pages.vision import render
 

@@ -40,14 +40,7 @@ def render():
         "pill_label": "Clinical Q&A · Evidence Retrieval",
         "page": "rag",
     },
-    {
-        "icon": "",
-        "title": "Medical NER",
-        "desc": "Extract structured medical entities such as conditions, medications, and symptoms from clinical text.",
-        "pill": "pill-purple",
-        "pill_label": "Clinical NLP · Entity Extraction",
-        "page": "ner",
-    },
+    
     {
         "icon": "",
         "title": "Skin Vision",

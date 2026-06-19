@@ -70,20 +70,6 @@ def rag_list_docs():
     )
     return response.json()
 
-# ── NER ───────────────────────────────────────────────────────────────────────
-
-def ner_extract(text: str) -> dict:
-    print("🔥 USING NEW NER FUNCTION")
-    print("URL:", f"{BASE_URL}/ner/extract")
-
-    response = requests.post(
-        f"{BASE_URL}/ner/extract",
-        json={"text": text},
-        timeout=60
-    )
-    return response.json()  
-
-
 # ── Vision ────────────────────────────────────────────────────────────────────
 
 def vision_classify(
