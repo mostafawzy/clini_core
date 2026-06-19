@@ -12,7 +12,7 @@ async def query_documents(
     
         )
 
-
+#jo
 @router.post("/upload", summary="Upload a medical PDF")
 async def upload_document()
 
