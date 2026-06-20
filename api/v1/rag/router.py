@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
-from loguru import logger
+from loguru  import logger
 
 from .schemas import RAGRequest, RAGResponse
 from .service import RAGService, get_rag_service
