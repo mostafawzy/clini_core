@@ -38,6 +38,27 @@ async def upload_document(
             detail="Only PDF files are supported.",
         )
 
+    try:
+        content = await file.read()
+
+        result = await service.ingest_pdf(
+            pdf_bytes=content,
+            filename=file.filename
+        )
+
+        return {
+            "message": f"Indexed {result['chunks']} chunks from '{file.filename}'"
+        }
+    except Exception as e:
+        logger.exception("Upload failed")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e),
+        )
+
 
 @router.get("/documents", summary="List indexed documents")
-async def list_documents()
+async def list_documents(
+    service: RAGService = Depends(get_rag_service)
+):
+    return await service.list_documents()
