@@ -33,7 +33,7 @@ class RAGService:
 
         settings = get_settings()
 
-        # chunking strategy for retrieval quality
+        # chunking 
         self._splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.chunk_size,
             chunk_overlap=settings.chunk_overlap,
@@ -42,7 +42,7 @@ class RAGService:
 
         self._initialised = False
 
-        # storage layout for raw files and FAISS index
+        
         self.base_path = Path(get_vectorstore_path())
         self.raw_path = self.base_path / "raw"
         self.processed_path = self.base_path / "processed"
@@ -61,7 +61,8 @@ class RAGService:
         self._embeddings = get_embeddings()
         self._llm = get_llm()
 
-        # reuse existing index if available
+        # reuse existing index ]
+        
         if (self.index_path / "index.faiss").exists():
             logger.info(f"Loading FAISS index from {self.index_path}")
 
