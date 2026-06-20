@@ -26,8 +26,17 @@ async def query_documents(
         )
 
 
+
 @router.post("/upload", summary="Upload a medical PDF")
-async def upload_document()
+async def upload_document(
+    file: UploadFile = File(...),
+    service: RAGService = Depends(get_rag_service),
+):
+    if not file.filename or not file.filename.lower().endswith(".pdf"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only PDF files are supported.",
+        )
 
 
 @router.get("/documents", summary="List indexed documents")
