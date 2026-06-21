@@ -33,7 +33,7 @@ class RAGService:
 
         settings = get_settings()
 
-        # chunking 
+        #  CHUNKING 
         self._splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.chunk_size,
             chunk_overlap=settings.chunk_overlap,
@@ -45,13 +45,12 @@ class RAGService:
         
         self.base_path = Path(get_vectorstore_path())
         self.raw_path = self.base_path / "raw"
-        self.processed_path = self.base_path / "processed"
         self.index_path = self.base_path / "indexes"
 
-        for p in [self.raw_path, self.processed_path, self.index_path]:
+        for p in [self.raw_path, self.index_path]:
             p.mkdir(parents=True, exist_ok=True)
 
-    # lazy-load heavy components (LLM, embeddings, FAISS)
+    
     def _ensure_init(self) -> None:
         if self._initialised:
             return
@@ -61,9 +60,10 @@ class RAGService:
         self._embeddings = get_embeddings()
         self._llm = get_llm()
 
-        # reuse existing index ]
-        
-        if (self.index_path / "index.faiss").exists():
+        #  LOAD EXISTING INDEX 
+        index_file = self.index_path / "index.faiss"
+
+        if index_file.exists():
             logger.info(f"Loading FAISS index from {self.index_path}")
 
             self._vector_store = FAISS.load_local(
@@ -75,12 +75,13 @@ class RAGService:
             meta_path = self.index_path / "doc_list.json"
             if meta_path.exists():
                 self._indexed_docs = json.loads(meta_path.read_text())
+
         else:
             logger.info("No existing FAISS index found")
 
         self._initialised = True
 
-    # PDF → chunks → embeddings → FAISS
+    #  INGEST PDF 
     async def ingest_pdf(self, pdf_bytes: bytes, filename: str) -> dict:
         self._ensure_init()
 
@@ -88,11 +89,11 @@ class RAGService:
 
         doc_id = str(uuid.uuid4())
 
-        # persist raw upload for traceability
+        #  SAVE RAW FILE 
         raw_file = self.raw_path / f"{doc_id}_{filename}"
         raw_file.write_bytes(pdf_bytes)
 
-        # load PDF pages
+        #  LOAD PDF 
         loader = PyPDFLoader(str(raw_file))
         pages = loader.load()
 
@@ -104,26 +105,27 @@ class RAGService:
                 "stage": "raw",
             })
 
-        # split into chunks 
+        #  SPLIT 
         chunks: list[Document] = self._splitter.split_documents(pages)
 
         if not chunks:
             raise ValueError("No text extracted from PDF")
 
+        #  CHUNKS WITH METADATA
         enriched_chunks = []
         for i, chunk in enumerate(chunks):
             chunk.metadata.update({
                 "chunk_id": f"{doc_id}_{i}",
                 "doc_id": doc_id,
                 "source": filename,
-                "stage": "processed",
+                "stage": "embedded",
                 "chunk_index": i,
             })
             enriched_chunks.append(chunk)
 
         assert self._embeddings is not None
 
-        # create or extend vector store
+        #  STORE 
         if self._vector_store is None:
             self._vector_store = FAISS.from_documents(
                 enriched_chunks,
@@ -134,7 +136,7 @@ class RAGService:
 
         self._persist()
 
-        # keep simple registry of ingested files
+        #  TRACK DOCS 
         if filename not in self._indexed_docs:
             self._indexed_docs.append(filename)
             self._save_doc_list()
@@ -144,7 +146,7 @@ class RAGService:
             "chunks": len(enriched_chunks)
         }
 
-    # retrieval + generation pipeline
+    #  QUERY 
     async def query(self, question: str, top_k: int = 5) -> RAGResponse:
         self._ensure_init()
 
@@ -163,7 +165,7 @@ class RAGService:
         )
 
         prompt = ChatPromptTemplate.from_template("""
-You are MediAssist, a clinical knowledge assistant.
+You are Clinicore AI, a clinical knowledge assistant.
 
 Use only the provided context.
 If the answer is not in the context, say so clearly.
@@ -196,6 +198,7 @@ Answer:
         answer = await rag_chain.ainvoke(question)
         docs = await retriever.ainvoke(question)
 
+        # -------- SOURCES --------
         seen = set()
         sources = []
 
@@ -221,6 +224,7 @@ Answer:
             sources=sources,
         )
 
+    #  LIST DOCS 
     async def list_documents(self) -> dict:
         self._ensure_init()
         return {
@@ -228,6 +232,7 @@ Answer:
             "count": len(self._indexed_docs),
         }
 
+    #  PERSIST 
     def _persist(self) -> None:
         if self._vector_store is None:
             return
