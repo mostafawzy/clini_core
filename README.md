@@ -1,213 +1,122 @@
-# ClinicoRe — Multimodal Clinical Intelligence System
+# Clinicore
 
-ClinicoRe is a multimodal AI system designed to support clinical workflows through the integration of:
+Clinicore is a multimodal clinical intelligence system that combines:
 
-* Retrieval-Augmented Generation (RAG) for document-based question answering
 * Deep learning–based computer vision for skin lesion classification
+* Retrieval-Augmented Generation (RAG) for document-based medical question answering
 
-The system combines structured knowledge retrieval with data-driven inference to provide grounded, explainable outputs.
+The system integrates data-driven inference with knowledge-grounded reasoning to produce explainable and clinically relevant outputs.
 
 ---
 
 ## Overview
 
-ClinicoRe addresses two core challenges in medical AI systems:
+Clinicore addresses two key challenges in medical AI:
 
-1. Efficient access to domain-specific knowledge from unstructured documents
-2. Automated interpretation of medical imagery for early diagnostic support
+1. Automated interpretation of dermatological images
+2. Efficient retrieval of domain-specific knowledge from unstructured clinical documents
 
-The platform is modular, scalable, and designed for integration into API-driven environments.
+The platform is modular, scalable, and designed for API-driven deployment.
 
 ---
 
-## Key Capabilities
+## Dataset
 
-### Document Intelligence (RAG)
+The dataset is split into training and validation subsets as follows:
 
-* Ingestion and indexing of PDF documents
-* Semantic chunking and embedding generation
-* Vector similarity search using FAISS
-* Context-grounded response generation via large language models
-* Source attribution and traceability
+```python
+print(len(train_ds), len(val_ds))
+# Output:
+# 20264 5067
+```
 
-### Vision Intelligence
+* **Training samples:** 20,264
+* **Validation samples:** 5,067
+* **Number of classes:** 8
 
-* Skin lesion classification using a fine-tuned EfficientNet-B5 model
-* Support for ISIC multi-class classification
-* Probabilistic outputs with ranked predictions
-
-### System Characteristics
-
-* Service-oriented architecture
-* Lazy initialization of compute-heavy components
-* Persistent vector storage
-* External model loading via Hugging Face Hub
+| Code | Description             |
+| ---- | ----------------------- |
+| AK   | Actinic Keratoses       |
+| BCC  | Basal Cell Carcinoma    |
+| BKL  | Benign Keratosis        |
+| DF   | Dermatofibroma          |
+| MEL  | Melanoma                |
+| NV   | Melanocytic Nevi        |
+| SCC  | Squamous Cell Carcinoma |
+| VASC | Vascular Lesions        |
 
 ---
 
 ## System Architecture
 
-### 1. Retrieval-Augmented Generation Pipeline
+Clinicore consists of two primary subsystems:
 
-The RAG pipeline follows a structured sequence:
+---
+
+### 1. Retrieval-Augmented Generation (RAG)
+
+The RAG pipeline enables document-grounded question answering.
+
+#### Pipeline Stages
 
 **Document Ingestion**
 
-* PDF files are parsed into pages using a document loader
+* PDF documents are parsed into structured text
 
-**Chunking Strategy**
+**Chunking**
 
-* Recursive text splitting with configurable chunk size and overlap
-* Optimized for retrieval quality and contextual coherence
+* Recursive splitting
+
+  * Chunk size: 500
+  * Overlap: 50
 
 **Embedding Generation**
 
-* Each chunk is transformed into a dense vector representation
+* Text chunks are converted into dense vector representations
 
 **Vector Indexing**
 
-* Embeddings are stored in a FAISS index
-* Index is persisted locally for reuse
+* Stored using FAISS with local persistence
 
 **Retrieval**
 
-* Top-K relevant chunks are retrieved based on semantic similarity
+* Top-K semantically relevant chunks are retrieved
 
-**Answer Generation**
+**Generation**
 
 * A large language model generates responses constrained to retrieved context
+
+  * Model: `llama-3.3-70b-versatile`
+
+#### Key Features
+
+* Semantic search with FAISS
+* Source attribution and traceability
+* Persistent vector storage
+* Lazy initialization of models (LLM + embeddings)
 
 ---
 
 ### 2. Vision Pipeline
 
-The vision module processes dermoscopic or clinical skin images:
+The vision module performs multi-class skin lesion classification.
+
+#### Workflow
 
 **Preprocessing**
 
-* Image resizing and normalization aligned with training configuration
+* Image resizing and normalization
 
 **Inference**
 
-* Forward pass through EfficientNet-B5
+* Forward pass through CNN architectures
 
 **Postprocessing**
 
 * Softmax probability distribution
-* Extraction of top prediction and Top-K classes
+* Top-K prediction ranking
 
----
-
-## Project Structure
-
-```
-project/
-│
-├── api/
-│   └── v1/
-│       ├── rag/
-│       │   ├── router.py
-│       │   ├── schemas.py
-│       │   └── service.py
-│       └── vision/
-│
-├── core/
-│   ├── config.py
-│   ├── llm.py
-│   ├── embeddings.py
-│   └── vectorstore.py
-│
-├── data/
-│   ├── raw/
-│   ├── processed/
-│   └── indexes/
-│
-├── streamlit_app/
-│
-└── README.md
-```
-
----
-
-## Configuration
-
-Environment variables are managed via a `.env` file:
-
-```
-GROQ_API_KEY=your_api_key
-```
-
-Default parameters:
-
-* Model: `llama-3.3-70b-versatile`
-* Chunk size: 500
-* Chunk overlap: 50
-* Vector storage: FAISS
-
----
-
-## RAG Service Design
-
-### Initialization Strategy
-
-The system employs lazy initialization to defer loading of:
-
-* Embedding model
-* Language model
-* FAISS index
-
-This reduces startup latency and optimizes resource usage.
-
-### Metadata and Traceability
-
-Each processed chunk includes metadata fields such as:
-
-* Document identifier
-* Chunk identifier
-* Source filename
-* Page reference
-
-This enables transparent answer attribution.
-
-### Persistence
-
-* FAISS index is stored locally
-* Indexed document registry is maintained in JSON format
-
----
-
-## API Functionality
-
-### Document Ingestion
-
-Processes uploaded PDFs into indexed vector representations.
-
-### Query Interface
-
-Retrieves relevant content and generates context-aware answers.
-
-### Document Listing
-
-Provides an overview of indexed documents.
-
----
-
-## Vision Service Design
-
-### Model Architecture
-
-* Backbone: EfficientNet-B5
-* Deployment: Loaded from Hugging Face Hub
-* Training: Fine-tuned on ISIC dataset
-
-### Inference Workflow
-
-* Input image preprocessing
-* Model forward pass
-* Probability computation via softmax
-* Ranking of predictions
-
-### Output Schema
+#### Output Example
 
 ```json
 {
@@ -222,54 +131,147 @@ Provides an overview of indexed documents.
 
 ---
 
-## Frontend Interface
+## Model Benchmarking
 
-The system includes a Streamlit-based interface that enables:
-
-* Image upload and classification
-* Visualization of prediction confidence
-* Interpretation support via structured outputs
+Five architectures were fine-tuned and evaluated:
 
 ---
 
-## Supported Classes (ISIC)
+### 1. EfficientNet-B5 (Fine-Tuned)
 
-| Code | Description             | Risk Level |
-| ---- | ----------------------- | ---------- |
-| MEL  | Melanoma                | High       |
-| NV   | Melanocytic Nevus       | Low        |
-| BCC  | Basal Cell Carcinoma    | Medium     |
-| AK   | Actinic Keratosis       | Medium     |
-| BKL  | Benign Keratosis        | Low        |
-| DF   | Dermatofibroma          | Low        |
-| VASC | Vascular Lesion         | Low-Med    |
-| SCC  | Squamous Cell Carcinoma | High       |
+* **Macro F1:** 0.8409
+* **Macro Recall:** 0.8398
+* **Accuracy:** 0.8666
+* **Inference Time:** 121.40 sec
+
+#### Per-Class F1
+
+| Class | F1     |
+| ----- | ------ |
+| AK    | 0.7394 |
+| BCC   | 0.9151 |
+| BKL   | 0.8101 |
+| DF    | 0.8372 |
+| MEL   | 0.7765 |
+| NV    | 0.9116 |
+| SCC   | 0.8066 |
+| VASC  | 0.9307 |
+
+---
+
+### 2. ConvNeXt-Base (Fine-Tuned) — **Best Deployment Model**
+
+* **Macro F1:** 0.7192
+* **Accuracy:** 0.7857
+* **Inference Time:** 72.45 sec
+
+**Checkpoint:**
+
+```
+checkpoints/convnext_base_ft_final.pth
+```
+
+---
+
+### 3. EfficientNet-B4 (Fine-Tuned)
+
+* **Macro F1:** 0.6682
+* **Accuracy:** 0.7557
+* **Inference Time:** 79.90 sec
+
+---
+
+### 4. DenseNet121 (Fine-Tuned)
+
+* **Epoch:** 10
+* **Loss:** 0.6368
+* **Macro F1:** 0.5830
+* **Accuracy:** 0.6838
+
+#### Per-Class F1
+
+| Class | F1     |
+| ----- | ------ |
+| AK    | 0.4173 |
+| BCC   | 0.6972 |
+| BKL   | 0.5095 |
+| DF    | 0.5769 |
+| MEL   | 0.5928 |
+| NV    | 0.8119 |
+| SCC   | 0.4776 |
+| VASC  | 0.5811 |
+
+#### Key Observations
+
+* Strong performance on **NV (0.8119)** and **BCC (0.6972)**
+* Weak performance on minority classes (AK, SCC)
+* High recall bias visible in confusion matrix (over-predicting dominant classes)
+
+---
+
+### 5. ResNet-50 (Fine-Tuned)
+
+* **Macro F1:** 0.4557
+* **Accuracy:** 0.5958
+* **Inference Time:** 62.49 sec
+
+---
+
+## Comparative Summary
+
+| Model           | Accuracy | Macro F1 | Inference Time | Notes                          |
+| --------------- | -------- | -------- | -------------- | ------------------------------ |
+| EfficientNet-B5 | 0.8666   | 0.8409   | 121.40 sec     | Best overall performance       |
+| ConvNeXt-Base   | 0.7857   | 0.7192   | 72.45 sec      | Best deployment trade-off      |
+| EfficientNet-B4 | 0.7557   | 0.6682   | 79.90 sec      | Moderate performance           |
+| DenseNet121     | 0.6838   | 0.5830   | —              | Balanced but weaker on classes |
+| ResNet-50       | 0.5958   | 0.4557   | 62.49 sec      | Lowest performance             |
+
+---
+
+## API Capabilities
+
+* **Document Ingestion:** Index PDF files into vector store
+* **Query Interface:** Retrieve and generate grounded responses
+* **Image Classification:** Predict lesion class from input image
 
 ---
 
 ## Technical Highlights
 
 * Retrieval-Augmented Generation (RAG)
-* Dense vector search with FAISS
-* Transformer-based language models
-* Transfer learning with convolutional neural networks
-* Modular backend design
+* FAISS-based vector search
+* Transformer-based LLM integration
+* Transfer learning with CNN architectures
+* Modular service-oriented backend design
 
 ---
 
-## Limitations and Disclaimer
+## Key Takeaways
 
-This system is intended for research and educational use only.
-It is not a substitute for professional medical advice or diagnosis.
+* EfficientNet-B5 achieves the highest accuracy and robustness
+* ConvNeXt-Base offers the best balance between performance and efficiency
+* DenseNet121 shows reasonable generalization but struggles with class imbalance
+* RAG enhances explainability and clinical grounding
+* The system unifies perception (vision) and reasoning (language)
 
 ---
 
-## Future Work
+## Future Improvements
 
-* Multimodal reasoning (joint vision + text inference)
-* OCR integration for scanned medical documents
+* Multimodal reasoning (vision + RAG fusion)
 * Hybrid retrieval (BM25 + dense embeddings)
+* Class imbalance mitigation (re-weighting, augmentation)
+* Model optimization (quantization, pruning)
 * Arabic clinical language support
-* Evaluation framework (Recall@K, MRR, F1)
 
+---
 
+## Authors
+
+Mostafa
+Yousef
+Menna
+Malak
+
+---

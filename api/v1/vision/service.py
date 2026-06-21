@@ -23,35 +23,26 @@ class VisionService:
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        repo_id = "menna143/skin-classifier-EfficientNet-B5"
-
-        ckpt_path = hf_hub_download(
-            repo_id=repo_id,
-            filename="pytorch_model.pth"
+        model_path = hf_hub_download(
+            repo_id="menna143/skin-classifier-EfficientNet-B5",
+            filename="efficientnet_b5_ft_best.pth"
         )
-
-        config_path = hf_hub_download(
-            repo_id=repo_id,
-            filename="config.json"
-        )
+        
+        checkpoint = torch.load(model_path, map_location=self.device)
 
         #  LOAD CONFIG 
-        with open(config_path, "r") as f:
-            config = json.load(f)
-
-        self.class_names = config["class_names"]
-        num_classes = config["num_classes"]
-        img_size = config["image_size"]
+        self.class_names = checkpoint["class_names"]
+        num_classes = len(self.class_names)
+        img_size = checkpoint["input_size"]
 
         #  BUILD MODEL 
         self.model = timm.create_model(
-            "efficientnet_b5",
+            "efficientnet_b5",   
             pretrained=False,
             num_classes=num_classes
         )
 
         #  LOAD WEIGHTS 
-        checkpoint = torch.load(ckpt_path, map_location=self.device)
         self.model.load_state_dict(checkpoint["model_state_dict"])
 
         self.model.to(self.device)
