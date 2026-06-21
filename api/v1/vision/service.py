@@ -8,46 +8,47 @@ from torchvision import transforms
 from huggingface_hub import hf_hub_download
 
 
+import torch
+import torch.nn.functional as F
+import timm
+import json
+import io
+
+from PIL import Image
+from torchvision import transforms
+from huggingface_hub import hf_hub_download
+
+
 class VisionService:
     def init(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        repo_id = "menna143/skin-classifier-EfficientNet-B5"
-
-        # Download files from HF
-        ckpt_path = hf_hub_download(
-            repo_id=repo_id,
-            filename="pytorch_model.pth"
+        model_path = hf_hub_download(
+            repo_id="menna143/skin-classifier-EfficientNet-B5",
+            filename="efficientnet_b5_ft_best.pth"
         )
+        
+        checkpoint = torch.load(model_path, map_location=self.device)
 
-        config_path = hf_hub_download(
-            repo_id=repo_id,
-            filename="config.json"
-        )
+        #  LOAD CONFIG 
+        self.class_names = checkpoint["class_names"]
+        num_classes = len(self.class_names)
+        img_size = checkpoint["input_size"]
 
-        # Load config
-        with open(config_path, "r") as f:
-            config = json.load(f)
-
-        self.class_names = config["class_names"]
-        num_classes = config["num_classes"]
-        img_size = config["img_size"]
-
-        # Build model FIRST
+        #  BUILD MODEL 
         self.model = timm.create_model(
-            "efficientnet_b5",
+            checkpoint["model_name"],   
             pretrained=False,
             num_classes=num_classes
         )
 
-        # Load checkpoint properly
-        checkpoint = torch.load(ckpt_path, map_location=self.device)
+        #  LOAD WEIGHTS 
         self.model.load_state_dict(checkpoint["model_state_dict"])
 
         self.model.to(self.device)
         self.model.eval()
 
-        # Transforms (must match training)
+        #  TRANSFORMS 
         self.transform = transforms.Compose([
             transforms.Resize((img_size, img_size)),
             transforms.ToTensor(),
@@ -60,15 +61,12 @@ class VisionService:
         x = self.transform(image)
         assert isinstance(x, torch.Tensor)
         x = x.unsqueeze(0).to(self.device)
-
-
-
-
+        
         with torch.no_grad():
             logits = self.model(x)
             probs = F.softmax(logits, dim=1)[0]
 
-        top_idx = int(torch.argmax(probs).item())
+        top_idx = int(torch.argmax(probs))
         predicted_class = self.class_names[top_idx]
         confidence = float(probs[top_idx])
 
