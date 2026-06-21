@@ -12,7 +12,7 @@ class VisionService:
     def init(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-        repo_id = ""
+        repo_id = "menna143/skin-classifier-EfficientNet-B5"
 
         # Download files from HF
         ckpt_path = hf_hub_download(
